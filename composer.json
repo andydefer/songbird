@@ -1,0 +1,20 @@
+{
+    "authors": [
+        {
+            "email": "andykanidimbu@gmail.com",
+            "name": "Andy Kani"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "AndyDefer\\Songbird\\": "src/"
+        }
+    },
+    "license": "MIT",
+    "name": "andydefer/songbird",
+    "require": {
+        "illuminate/support": "^12.0",
+        "php": "^8.2"
+    },
+    "type": "library"
+}
