@@ -1,8 +1,7 @@
 # Makefile pour automatiser git commit, push et gestion de tags
 
 # Commit & push tous les changements
-.PHONY: git-commit-push
-git-commit-push:
+git-commit-push:  # Commit & push tous les changements
 	@read -p "Enter commit message: " msg; \
 	if [ -z "$$msg" ]; then \
 		echo "Commit message cannot be empty!"; \
@@ -13,8 +12,7 @@ git-commit-push:
 	git push
 
 # Gestion des tags: major, minor, patch
-.PHONY: git-tag
-git-tag:
+git-tag:  # Gestion des tags: major, minor, patch
 	@read -p "Tag type (major/minor/patch): " type; \
 	# Récupérer le dernier tag existant
 	last_tag=$$(git tag --sort=-v:refname | head -n 1); \
@@ -37,3 +35,8 @@ git-tag:
 	git tag -a "$$new_tag" -m "Release $$new_tag"; \
 	git push origin "$$new_tag"; \
 	echo "Pushed new tag: $$new_tag"
+
+# Affiche l'aide et les descriptions
+help:  # Affiche l'aide
+	@echo "📖 Makefile commands:"; \
+	awk '/^#/{desc=$$0}/^[a-zA-Z0-9_-]+:/{gsub(":", "", $$1); gsub(/^# /, "", desc); printf "%-15s -> %s\n", $$1, desc}' $(MAKEFILE_LIST) | sort
