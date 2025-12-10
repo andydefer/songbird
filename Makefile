@@ -36,7 +36,17 @@ git-tag:  # Gestion des tags: major, minor, patch
 	git push origin "$$new_tag"; \
 	echo "Pushed new tag: $$new_tag"; \
 	'
-
+# Republier le dernier tag
+git-tag-republish:  # Republie le dernier tag sur l'origine
+	@bash -c '\
+	last_tag=$$(git tag --sort=-v:refname | head -n 1); \
+	if [ -z "$$last_tag" ]; then \
+		echo "No tags found to republish!"; exit 1; \
+	fi; \
+	echo "Republishing last tag: $$last_tag"; \
+	git push origin "$$last_tag" --force; \
+	echo "Tag $$last_tag republished"; \
+	'
 
 # Affiche l'aide et les descriptions
 help:  # Affiche l'aide
