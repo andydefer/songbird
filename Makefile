@@ -13,8 +13,8 @@ git-commit-push:  # Commit & push tous les changements
 
 # Gestion des tags: major, minor, patch
 git-tag:  # Gestion des tags: major, minor, patch
-	@read -p "Tag type (major/minor/patch): " type; \
-	# Récupérer le dernier tag existant
+	@bash -c '\
+	read -p "Tag type (major/minor/patch): " type; \
 	last_tag=$$(git tag --sort=-v:refname | head -n 1); \
 	if [ -z "$$last_tag" ]; then \
 		last_tag="0.0.0"; \
@@ -34,7 +34,9 @@ git-tag:  # Gestion des tags: major, minor, patch
 	new_tag="$$major.$$minor.$$patch"; \
 	git tag -a "$$new_tag" -m "Release $$new_tag"; \
 	git push origin "$$new_tag"; \
-	echo "Pushed new tag: $$new_tag"
+	echo "Pushed new tag: $$new_tag"; \
+	'
+
 
 # Affiche l'aide et les descriptions
 help:  # Affiche l'aide

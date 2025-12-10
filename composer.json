@@ -10,6 +10,17 @@
             "AndyDefer\\Songbird\\": "src/"
         }
     },
+    "description": "A Laravel package to manage Songbird features",
+    "extra": {
+        "laravel": {
+            "aliases": {
+                "Songbird": "AndyDefer\\Songbird\\Facades\\Songbird"
+            },
+            "providers": [
+                "AndyDefer\\Songbird\\SongbirdServiceProvider"
+            ]
+        }
+    },
     "license": "MIT",
     "name": "andydefer/songbird",
     "require": {
