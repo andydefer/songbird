@@ -1,96 +1,62 @@
 #!/usr/bin/env php
 <?php
 
+require_once __DIR__ . '/vendor/autoload.php';
+
+use AndyDefer\Songbird\Contracts\CommandInterface;
+
 class ArtifactCli
 {
-    private array $commands = [
-        'make:test' => 'generateTestFile',
-    ];
+    /** @var array<string, CommandInterface> */
+    private array $commands = [];
+
+    public function __construct(array $commandClasses)
+    {
+        $this->registerCommands($commandClasses);
+    }
+
+    /**
+     * Enregistre toutes les commandes depuis les classes configurées
+     */
+    private function registerCommands(array $commandClasses): void
+    {
+        foreach ($commandClasses as $commandClass) {
+            if (!class_exists($commandClass)) {
+                echo "Attention: La classe {$commandClass} n'existe pas.\n";
+                continue;
+            }
+
+            if (!is_subclass_of($commandClass, CommandInterface::class)) {
+                echo "Attention: {$commandClass} doit implémenter CommandInterface.\n";
+                continue;
+            }
+
+            /** @var CommandInterface $command */
+            $command = new $commandClass();
+            $this->commands[$command->getName()] = $command;
+        }
+    }
 
     public function run(array $argv): void
     {
-        if (count($argv) < 3) {
+        if (count($argv) < 2) {
             $this->showHelp();
             exit(1);
         }
 
-        $command = $argv[1];
-        $argument = $argv[2] ?? null;
+        $commandName = $argv[1];
+        $arguments = array_slice($argv, 2);
 
-        if (!isset($this->commands[$command])) {
-            echo "Commande inconnue: {$command}\n";
+        if (!isset($this->commands[$commandName])) {
+            echo "Commande inconnue: {$commandName}\n";
             $this->showHelp();
             exit(1);
         }
 
-        $method = $this->commands[$command];
-        $this->$method($argument);
-    }
-
-    private function generateTestFile(string $testPath): void
-    {
-        // Extraire le nom de la classe à partir du chemin
-        $pathParts = explode('/', $testPath);
-        $className = end($pathParts);
-
-        // Retirer l'extension .php si présente
-        $className = str_replace('.php', '', $className);
-
-        // Extraire le namespace à partir du chemin
-        $namespaceParts = explode('/', $testPath);
-        array_pop($namespaceParts); // Retirer le nom de la classe
-
-        // Construire le namespace complet
-        $baseNamespace = "AndyDefer\\Songbird\\Tests";
-        $subNamespace = implode('\\', $namespaceParts);
-
-        $fullNamespace = $subNamespace
-            ? $baseNamespace . '\\' . trim($subNamespace, '\\')
-            : $baseNamespace;
-
-        // Déterminer le chemin du fichier
-        $filePath = 'tests/' . $testPath;
-
-        // S'assurer que le fichier se termine par .php
-        if (!str_ends_with($filePath, '.php')) {
-            $filePath .= '.php';
-        }
-
-        // Créer le répertoire s'il n'existe pas
-        $directory = dirname($filePath);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        // Vérifier si le fichier existe déjà
-        if (file_exists($filePath)) {
-            echo "Erreur: Le fichier {$filePath} existe déjà.\n";
-            exit(1);
-        }
-
-        // Générer le contenu du fichier de test
-        $content = <<<PHP
-<?php
-
-namespace {$fullNamespace};
-
-use PHPUnit\Framework\TestCase;
-
-class {$className} extends TestCase
-{
-    public function test_basic_math()
-    {
-        \$this->assertEquals(2, 1 + 1);
-    }
-}
-
-PHP;
-
-        // Écrire le fichier
-        if (file_put_contents($filePath, $content)) {
-            echo "✓ Test créé avec succès: {$filePath}\n";
-        } else {
-            echo "✗ Erreur lors de la création du fichier: {$filePath}\n";
+        try {
+            $this->commands[$commandName]->execute($arguments);
+        } catch (Exception $e) {
+            echo "Erreur lors de l'exécution: " . $e->getMessage() . "\n";
             exit(1);
         }
     }
@@ -98,20 +64,31 @@ PHP;
     private function showHelp(): void
     {
         echo "Artifact CLI - Outil de génération de code\n\n";
-        echo "Usage: php artifact <commande> <argument>\n\n";
+        echo "Usage: php artifact <commande> [arguments...]\n\n";
         echo "Commandes disponibles:\n";
-        echo "  make:test <chemin>  Génère un fichier de test\n";
-        echo "                      Exemple: php artifact make:test Unit/ExampleTest\n\n";
+
+        foreach ($this->commands as $command) {
+            echo sprintf(
+                "  %-20s %s\n",
+                $command->getName(),
+                $command->getDescription()
+            );
+        }
+
+        echo "\nPour plus d'informations sur une commande:\n";
+        echo "  php artifact <commande> --help\n\n";
         echo "Exemples:\n";
         echo "  php artifact make:test Unit/ExampleTest\n";
         echo "  php artifact make:test Feature/UserTest\n";
-        echo "  php artifact make:test Integration/AuthTest\n";
     }
 }
 
 // Point d'entrée de l'application
 if (PHP_SAPI === 'cli') {
-    $cli = new ArtifactCli();
+    // Charger la configuration des commandes
+    $commandsConfig = require __DIR__ . '/config/commands.php';
+
+    $cli = new ArtifactCli($commandsConfig);
     $cli->run($argv);
 } else {
     echo "Ce script doit être exécuté en ligne de commande.\n";
